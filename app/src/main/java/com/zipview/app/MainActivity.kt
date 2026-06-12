@@ -8,7 +8,6 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -20,6 +19,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val incoming = extractArchiveUri(intent)
+        val incomingFlags = intent?.flags ?: 0
         setContent {
             ZipViewTheme {
                 Surface(
@@ -27,7 +27,11 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background,
                 ) {
                     val initialUri = remember { mutableStateOf(incoming) }
-                    ZipViewApp(initialArchiveUri = initialUri.value)
+                    val initialFlags = remember { mutableStateOf(incomingFlags) }
+                    ZipViewApp(
+                        initialArchiveUri = initialUri.value,
+                        initialArchiveFlags = initialFlags.value,
+                    )
                 }
             }
         }

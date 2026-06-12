@@ -18,7 +18,13 @@ object ArchiveManager {
 
     fun openUri(context: Context, key: String): ArchiveProvider =
         providers.getOrPut(key) {
-            val source = UriArchiveSource(context.applicationContext, Uri.parse(key))
+            val uri = Uri.parse(key)
+            val source = if (uri.scheme == "file") {
+                val path = uri.path ?: error("无效的文件 Uri: $key")
+                FileArchiveSource(File(path))
+            } else {
+                UriArchiveSource(context.applicationContext, uri)
+            }
             ArchiveProviderFactory.create(source, cacheRoot(context))
         }
 

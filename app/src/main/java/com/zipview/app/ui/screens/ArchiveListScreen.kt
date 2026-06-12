@@ -1,6 +1,7 @@
 package com.zipview.app.ui.screens
 
 import android.app.Application
+import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -48,7 +49,7 @@ import com.zipview.app.util.formatSize
 class ArchiveListViewModel(app: Application) : AndroidViewModel(app) {
     private val repo = ArchiveRepository.get(app)
     val items = repo.items
-    fun add(uri: Uri) = repo.add(uri)
+    fun add(uri: Uri, flags: Int = 0) = repo.add(uri, flags)
     fun remove(item: ArchiveItem) = repo.remove(item.uri)
     fun rename(item: ArchiveItem, newName: String) = repo.rename(item.uri, newName)
     fun isAccessible(item: ArchiveItem) = repo.isAccessible(item.uri)
@@ -68,8 +69,11 @@ fun ArchiveListScreen(
     var inaccessibleTarget by remember { mutableStateOf<ArchiveItem?>(null) }
 
     val picker = rememberLauncherForActivityResult(
-        ActivityResultContracts.OpenDocument(),
-    ) { uri: Uri? -> uri?.let(vm::add) }
+        ActivityResultContracts.StartActivityForResult(),
+    ) { result ->
+        val uri = result.data?.data ?: return@rememberLauncherForActivityResult
+        vm.add(uri, result.data?.flags ?: 0)
+    }
 
     Scaffold(
         topBar = { TopAppBar(title = { Text("ZipView") }) },
@@ -77,7 +81,7 @@ fun ArchiveListScreen(
             ExtendedFloatingActionButton(
                 text = { Text("添加压缩包") },
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                onClick = { picker.launch(arrayOf("*/*")) },
+                onClick = { picker.launch(openArchiveIntent()) },
             )
         },
     ) { padding ->
@@ -158,13 +162,30 @@ fun ArchiveListScreen(
                 TextButton(onClick = {
                     vm.remove(target)
                     inaccessibleTarget = null
-                    picker.launch(arrayOf("*/*"))
+                    picker.launch(openArchiveIntent())
                 }) { Text("重新选择") }
             },
             dismissButton = { TextButton(onClick = { inaccessibleTarget = null }) { Text("取消") } },
         )
     }
 }
+
+private fun openArchiveIntent(): Intent =
+    Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+        addCategory(Intent.CATEGORY_OPENABLE)
+        type = "*/*"
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
+        putExtra(
+            Intent.EXTRA_MIME_TYPES,
+            arrayOf(
+                "application/zip",
+                "application/x-zip-compressed",
+                "application/x-tar",
+                "application/octet-stream",
+            ),
+        )
+    }
 
 @Composable
 private fun ArchiveRow(

@@ -33,14 +33,14 @@ object Routes {
 }
 
 @Composable
-fun ZipViewApp(initialArchiveUri: Uri?) {
+fun ZipViewApp(initialArchiveUri: Uri?, initialArchiveFlags: Int = 0) {
     val nav = rememberNavController()
     val context = LocalContext.current
 
     LaunchedEffect(initialArchiveUri) {
         if (initialArchiveUri != null) {
-            ArchiveRepository.get(context).add(initialArchiveUri)
-            nav.navigate(Routes.browse(initialArchiveUri.toString(), ""))
+            val storedUri = ArchiveRepository.get(context).add(initialArchiveUri, initialArchiveFlags)
+            nav.navigate(Routes.browse(storedUri.toString(), ""))
         }
     }
 
